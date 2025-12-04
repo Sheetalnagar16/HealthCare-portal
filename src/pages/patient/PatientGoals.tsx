@@ -1,16 +1,26 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { patientApi } from "@/services/api";
 import { WellnessGoal, GoalFormData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Footprints, Moon, Droplets, Timer, Save, History } from "lucide-react";
 
+// ⭐ use our Django API helpers instead of patientApi
+import { getRecentGoals, saveDailyGoal } from "@/api/goals";
+
+
 const PatientGoals = () => {
   const { user } = useAuth();
+
   const [goals, setGoals] = useState<WellnessGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -23,23 +33,24 @@ const PatientGoals = () => {
     active_minutes: 0,
   });
 
+  // 🔁 Load last 7 days from Django when page mounts
   useEffect(() => {
     const loadGoals = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        // Get last 7 days of goals
-        const today = new Date();
-        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const data = await patientApi.getGoalsHistory(
-          user.id,
-          weekAgo.toISOString().split("T")[0],
-          today.toISOString().split("T")[0]
-        );
+        const res = await getRecentGoals();
+        const data = res.data;
         setGoals(data);
 
-        // Pre-fill form with today's goals if they exist
+        // Pre-fill today’s form if today already exists
+        const today = new Date();
         const todayStr = today.toISOString().split("T")[0];
         const todayGoal = data.find((g) => g.date === todayStr);
+
         if (todayGoal) {
           setFormData({
             steps: todayGoal.steps,
@@ -54,22 +65,33 @@ const PatientGoals = () => {
         setIsLoading(false);
       }
     };
+
     loadGoals();
   }, [user]);
 
+  // 💾 Save today's goals to Django
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setIsSaving(true);
+
     try {
-      const newGoal = await patientApi.createGoal(user.id, formData);
-      
-      // Update goals list
       const todayStr = new Date().toISOString().split("T")[0];
+
+      const res = await saveDailyGoal({
+        date: todayStr,
+        ...formData,
+      });
+
+      const newGoal = res.data;
+
+      // Update local list: replace today's goal if exists, else prepend
       setGoals((prev) => {
         const filtered = prev.filter((g) => g.date !== todayStr);
-        return [newGoal, ...filtered];
+        return [newGoal, ...filtered].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
       });
 
       toast({
@@ -77,6 +99,7 @@ const PatientGoals = () => {
         description: "Your wellness goals for today have been recorded.",
       });
     } catch (error) {
+      console.error(error);
       toast({
         title: "Error",
         description: "Failed to save goals. Please try again.",
@@ -103,7 +126,11 @@ const PatientGoals = () => {
       return "Yesterday";
     }
 
-    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   if (isLoading) {
@@ -131,9 +158,14 @@ const PatientGoals = () => {
         {/* Log Form */}
         <Card className="animate-slide-up">
           <CardHeader>
-            <CardTitle>Log Today's Goals</CardTitle>
+            <CardTitle>Log Today&apos;s Goals</CardTitle>
             <CardDescription>
-              Record your wellness activities for {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              Record your wellness activities for{" "}
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -149,7 +181,12 @@ const PatientGoals = () => {
                   min="0"
                   max="100000"
                   value={formData.steps}
-                  onChange={(e) => setFormData({ ...formData, steps: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      steps: parseInt(e.target.value) || 0,
+                    })
+                  }
                   placeholder="0"
                 />
               </div>
@@ -166,7 +203,12 @@ const PatientGoals = () => {
                   max="24"
                   step="0.5"
                   value={formData.sleep_hours}
-                  onChange={(e) => setFormData({ ...formData, sleep_hours: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      sleep_hours: parseFloat(e.target.value) || 0,
+                    })
+                  }
                   placeholder="0"
                 />
               </div>
@@ -182,7 +224,12 @@ const PatientGoals = () => {
                   min="0"
                   max="50"
                   value={formData.water_glasses}
-                  onChange={(e) => setFormData({ ...formData, water_glasses: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      water_glasses: parseInt(e.target.value) || 0,
+                    })
+                  }
                   placeholder="0"
                 />
               </div>
@@ -198,7 +245,12 @@ const PatientGoals = () => {
                   min="0"
                   max="1440"
                   value={formData.active_minutes}
-                  onChange={(e) => setFormData({ ...formData, active_minutes: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      active_minutes: parseInt(e.target.value) || 0,
+                    })
+                  }
                   placeholder="0"
                 />
               </div>
@@ -239,7 +291,9 @@ const PatientGoals = () => {
                     key={goal.id}
                     className="p-4 rounded-lg bg-muted/50 border hover:bg-muted/70 transition-colors"
                   >
-                    <p className="font-medium text-foreground mb-2">{formatDate(goal.date)}</p>
+                    <p className="font-medium text-foreground mb-2">
+                      {formatDate(goal.date)}
+                    </p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Footprints className="h-3 w-3 text-success" />
