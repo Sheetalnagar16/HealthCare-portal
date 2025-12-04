@@ -1,210 +1,189 @@
-*HealthWell – Preventive Healthcare & Wellness Portal
+🌿 HealthWell – Full-Stack Wellness Tracking Portal
 
-A Full-Stack Web Application using Django, MySQL, React, and JWT Authentication
+A modern full-stack web application that allows patients to log their daily wellness metrics—steps, sleep hours, water intake, and active minutes—while tracking progress across the week.
+Built using React (TypeScript), Django REST Framework, and PostgreSQL.
 
-🚀 Overview
+🚀 Tech Stack
+Frontend
 
-HealthWell is a production-ready preventive healthcare portal designed for two types of users:
+React + TypeScript
 
-Patients – Track daily wellness metrics (steps, sleep, hydration, activity), manage reminders, and view personalized dashboards.
+Vite
 
-Healthcare Providers – Monitor patient compliance, view wellness logs, and access patient profiles.
+TailwindCSS + ShadCN UI
 
-This project includes:
+Axios
 
-Backend: Django + DRF + MySQL
+React Router
 
-Frontend: React (JavaScript) + React Router
-
-Auth: JWT (access + refresh)
-
-Role-based access: PATIENT / PROVIDER
-
-Clean UI + responsive layout
-
-Backed by complete CRUD APIs, dashboards, profile management, and secure authentication.
-
-📂 Repository Structure
-root/
-  backend/
-    manage.py
-    backend/
-    api/
-    requirements.txt
-    .env.example
-
-  frontend/
-    package.json
-    webpack.config.js
-    public/
-    src/
-    .env.example
-
-  README.md
-
-🛠 Tech Stack
 Backend
 
-Python 3
-
-Django 5
+Django 6
 
 Django REST Framework
 
-SimpleJWT Authentication
+PostgreSQL
 
-MySQL Database
+psycopg2-binary
 
-python-dotenv
+Tools
 
-CORS Headers
+Git & GitHub
 
-Frontend
+pgAdmin
 
-React 18
+VS Code
 
-React Router 6
+🧩 Features
+Patient Side
 
-Webpack + Babel
+Log daily wellness goals:
 
-Fetch-based API layer
+Steps
 
-🔐 Authentication
+Sleep hours
 
-JWT-based login (access + refresh)
+Water glasses
 
-Role-based permissions:
+Active minutes
 
-Patients can only access their own data.
+Auto-fill today's values if already logged
 
-Providers can view all patients.
+View last 7 days of history
 
-JWT stored in localStorage.
+Clean and responsive UI
 
-📦 Backend Setup (Django + MySQL)
-1. Install dependencies
+Backend API
+
+Save or update wellness goals for a specific day
+
+Fetch 7-day recent wellness log
+
+PostgreSQL database integration
+
+CORS-enabled API for frontend
+
+📁 Project Structure
+healthwell-portal/
+│
+├── backend/
+│   ├── config/             # Django settings & URLs
+│   ├── goals/              # App with models, serializers, views
+│   ├── manage.py
+│   └── venv/               # Virtual environment
+│
+└── frontend/
+    ├── src/
+    │   ├── pages/
+    │   ├── components/
+    │   ├── api/
+    │   └── goals.ts        # Axios API helpers
+    ├── vite.config.ts
+    └── package.json
+
+🛠️ Installation & Setup Guide
+🔧 Backend Setup (Django + PostgreSQL)
+1️⃣ Create Virtual Environment
 cd backend
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv venv
+.\venv\Scripts\activate
+
+2️⃣ Install Dependencies
 pip install -r requirements.txt
 
-2. Configure environment variables
+3️⃣ Create PostgreSQL Database & User
 
-Copy .env.example → .env:
+Use pgAdmin or run SQL:
 
-cp .env.example .env
+CREATE DATABASE healthwell_db;
+CREATE USER healthuser WITH PASSWORD 'StrongPassword123';
+GRANT ALL PRIVILEGES ON DATABASE healthwell_db TO healthuser;
 
+4️⃣ Update settings.py
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "healthwell_db",
+        "USER": "healthuser",
+        "PASSWORD": "StrongPassword123",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
+    }
+}
 
-Update fields:
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
 
-SECRET_KEY=...
-DEBUG=True
-DB_NAME=health_portal
-DB_USER=root
-DB_PASSWORD=yourpassword
-DB_HOST=127.0.0.1
-DB_PORT=3306
-CORS_ALLOWED_ORIGINS=http://localhost:3000
-
-3. Create MySQL database
-
-Open MySQL shell:
-
-CREATE DATABASE health_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-4. Run migrations
+5️⃣ Apply Migrations
 python manage.py migrate
 
-
-(Optional)
-
-python manage.py createsuperuser
-
-5. Run backend
-python manage.py runserver 0.0.0.0:8000
+6️⃣ Start Backend Server
+python manage.py runserver
 
 
-Backend now runs at:
+Backend runs at:
+👉 http://127.0.0.1:8000
 
-👉 http://localhost:8000/api/
-
-🌐 Frontend Setup (React + Webpack)
-1. Install dependencies
+💻 Frontend Setup (React + Vite)
+1️⃣ Install Packages
 cd frontend
 npm install
 
-2. Setup environment variables
-cp .env.example .env
-
-
-Default:
-
-REACT_APP_API_URL=http://localhost:8000/api
-
-3. Start development server
-npm start
+2️⃣ Start Dev Server
+npm run dev
 
 
 Frontend runs at:
+👉 http://localhost:8080
 
-👉 http://localhost:3000
+🔗 API Endpoints
+POST /api/goals – Save or update daily goal
 
-🔗 Key API Endpoints
-Auth
-Method	Endpoint	Description
-POST	/api/auth/register/	Register patient/provider
-POST	/api/auth/login/	Login & get JWT tokens
-GET	/api/auth/me/	Get logged-in user info
-Public
-Method	Endpoint	Description
-GET	/api/public/health-info/	Static health tips
-GET	/api/public/privacy-policy/	Privacy policy
-Patient APIs
-Method	Endpoint	Description
-GET	/api/patient/dashboard/	Wellness summary, reminders, tip
-GET	/api/patient/goals/	List own goals
-POST	/api/patient/goals/	Create daily wellness log
-GET	/api/patient/goals/history/	History by date range
-GET	/api/patient/profile/	View profile
-PUT	/api/patient/profile/	Update profile
-Provider APIs
-Method	Endpoint	Description
-GET	/api/provider/patients/	List all patients with compliance
-GET	/api/provider/patients/<id>/	Detailed view of patient
-🧪 Running Tests
-cd backend
-python manage.py test api
+Request body:
 
+{
+  "date": "2025-12-05",
+  "steps": 9000,
+  "sleep_hours": 8,
+  "water_glasses": 12,
+  "active_minutes": 30
+}
 
-Covers:
+GET /api/goals/recent – Last 7 days
 
-Registration + duplicate emails
+Response:
 
-Login + JWT issued
+[
+  {
+    "id": 1,
+    "date": "2025-12-05",
+    "steps": 9000,
+    "sleep_hours": 8,
+    "water_glasses": 12,
+    "active_minutes": 30
+  }
+]
 
-Patient access restrictions
+🧠 Model Structure (DailyGoal)
+class DailyGoal(models.Model):
+    date = models.DateField(unique=True)
+    steps = models.IntegerField(default=0)
+    sleep_hours = models.FloatField(default=0)
+    water_glasses = models.IntegerField(default=0)
+    active_minutes = models.IntegerField(default=0)
 
-Provider access restrictions
+🛡️ Future Enhancements
 
-🎯 Feature Highlights
-✔ Custom User Model (email login)
-✔ Wellness logs (steps, sleep, hydration, activity)
-✔ Reminders system
-✔ Dashboards for both patient & provider
-✔ Role-based UI in React
-✔ Reusable API service layer
-✔ JWT secured routes + auto redirect on 401
-✔ Clean CSS, responsive layout
-🧭 Development Workflow
+JWT authentication
 
-Configure backend .env
+Provider/admin dashboard
 
-Run Django migrations
+Weekly analytics charts
 
-Start backend server
+Email/SMS reminders
 
-Configure frontend .env
+Mobile app integration
 
-Run React dev server
-
-Register new user → login → dashboard*
+Gamification (badges, streaks)
